@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
+from django.utils import timezone
 import hashlib
 
 
@@ -95,3 +96,23 @@ class Files(models.Model):
 
     def __str__(self):
         return self.fw
+
+
+class TempUrl(models.Model):
+    url_token = models.CharField(
+        max_length=128, blank=False, null=False,
+        primary_key=True, unique=True)
+    expire_time = models.DateTimeField(blank=True)
+    target_file = models.ForeignKey(Files)
+
+    class Meta:
+        db_table = "TempUrl"
+
+    def __str__(self):
+        return self.url_token
+
+    def expiretime(self):
+        return unicode(self.expire_time)
+
+    def path(self):
+        return self.target_file
