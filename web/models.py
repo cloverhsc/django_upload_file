@@ -116,3 +116,91 @@ class TempUrl(models.Model):
 
     def path(self):
         return self.target_file
+
+
+class Session(models.Model):
+    RESULT_UNKNOWN = 0
+    RESULT_SUCCESSFUL = 200
+    RESULT_CLIENT_ERROR = 400
+    RESULT_USER_CANCELED = 401
+    RESULT_PACKAGE_CORRUPT = 402
+    RESULT_PACKAGE_MISMATCH = 403
+    RESULT_SIGNATURE_FAILED = 404
+    RESULT_NOT_ACCEPTABLE = 405
+    RESULT_AUTH_FAILED = 406
+    RESULT_REQUEST_TIMEOUT = 407
+    RESULT_NOT_IMPLEMENTED = 408
+    RESULT_UNDEFINED_ERROR = 409
+    RESULT_UPDATE_FAILED = 410
+    RESULT_BAD_URL = 411
+    RESULT_DOWNLOAD_SERVER_UNAVAILABLE = 412
+    RESULT_DOWNLOAD_SERVER_ERROR = 500
+    RESULT_OUT_OF_MEMORY_FOR_DOWNLOAD = 501
+    RESULT_OUT_OF_MEMORY_FOR_UPDATE = 502
+
+    RESULT_CHOICES = (
+        (RESULT_UNKNOWN, 'RESULT_UNKNOWN'),
+        (RESULT_SUCCESSFUL, 'RESULT_SUCCESSFUL'),
+        (RESULT_CLIENT_ERROR, 'RESULT_CLIENT_ERROR'),
+        (RESULT_USER_CANCELED, 'RESULT_USER_CANCELED'),
+        (RESULT_PACKAGE_CORRUPT, 'RESULT_PACKAGE_CORRUPT'),
+        (RESULT_PACKAGE_MISMATCH, 'RESULT_PACKAGE_MISMATCH'),
+        (RESULT_SIGNATURE_FAILED, 'RESULT_SIGNATURE_FAILED'),
+        (RESULT_NOT_ACCEPTABLE, 'RESULT_NOT_ACCEPTABLE'),
+        (RESULT_AUTH_FAILED, 'RESULT_AUTH_FAILED'),
+        (RESULT_REQUEST_TIMEOUT, 'RESULT_REQUEST_TIMEOUT'),
+        (RESULT_NOT_IMPLEMENTED, 'RESULT_NOT_IMPLEMENTED'),
+        (RESULT_UNDEFINED_ERROR, 'RESULT_UNDEFINED_ERROR'),
+        (RESULT_UPDATE_FAILED, 'RESULT_UPDATE_FAILED'),
+        (RESULT_BAD_URL, 'RESULT_BAD_URL'),
+        (RESULT_DOWNLOAD_SERVER_UNAVAILABLE,
+         'RESULT_DOWNLOAD_SERVER_UNAVAILABLE'),
+        (RESULT_DOWNLOAD_SERVER_ERROR, 'RESULT_DOWNLOAD_SERVER_ERROR'),
+        (RESULT_OUT_OF_MEMORY_FOR_DOWNLOAD,
+         'RESULT_OUT_OF_MEMORY_FOR_DOWNLOAD'),
+        (RESULT_OUT_OF_MEMORY_FOR_UPDATE, 'RESULT_OUT_OF_MEMORY_FOR_UPDATE'),
+    )
+
+    device = models.ForeignKey(Device)
+    session_id = models.AutoField(primary_key=True, unique=True)
+    result = models.IntegerField(
+        choices=RESULT_CHOICES, default=RESULT_UNKNOWN)
+    time = models.DateTimeField(auto_now=True)
+
+    REQUIRED_FIELD = ['device']
+
+    def __str__(self):
+        return self.session_id
+
+    class Meta:
+        db_table = 'Session'
+
+
+class SessionEvent(models.Model):
+    EVENT_UNKNOWN = 0
+    EVENT_PUSH_NOTIFICATION = 1
+    EVENT_FOTA_CHECK = 2
+    EVENT_FOTA_REQUEST = 3
+    EVENT_FOTA_DOWNLOAD = 4
+    EVENT_FOTA_RESULT = 5
+
+    EVENT_CHOICES = (
+        (EVENT_UNKNOWN, 'EVENT_UNKNOWN'),
+        (EVENT_PUSH_NOTIFICATION, 'EVENT_PUSH_NOTIFICATION'),
+        (EVENT_FOTA_CHECK, 'EVENT_FOTA_CHECK'),
+        (EVENT_FOTA_REQUEST, 'EVENT_FOTA_REQUEST'),
+        (EVENT_FOTA_DOWNLOAD, 'EVENT_FOTA_DOWNLOAD'),
+        (EVENT_FOTA_RESULT, 'EVENT_FOTA_RESULT')
+    )
+
+    session = models.ForeignKey(Session)
+    time = models.DateTimeField(auto_now=True)
+    event = models.IntegerField(choices=EVENT_CHOICES, default=EVENT_UNKNOWN)
+
+    REQUIRED_FIELD = ['SESSION']
+
+    def __str__(self):
+        return self.EVENT_CHOICES[self.event]
+
+    class Meta:
+        db_table = 'SessionEvent'
