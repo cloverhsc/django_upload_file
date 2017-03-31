@@ -1,10 +1,34 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-from django.utils import timezone
 import hashlib
 
 
 # Create your models here.
+class Model(models.Model):
+    '''
+        Production model name. EX: Babycam, Personal Cloud, ....etc
+    '''
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=64, unique=True)
+    desc = models.CharField(blank=True, max_length=256, null=True)
+
+    USERNAME_FIELD = 'name'
+    REQUIRED_FIELD = ['name']
+
+    class Meta:
+        db_table = 'Model'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+    def raw_data(self):
+        return (self.id, self.name, self.desc)
+
+    def description(self):
+        return self.desc
+
+
 class BookManager(models.Manager):
     def create_book(self, **extra_field):
         md5obj = hashlib.md5()
@@ -21,7 +45,7 @@ class BookManager(models.Manager):
 
 class Book(models.Model):
     objects = BookManager()
-    title = models.CharField(max_length=64, unique=True)
+    title = models.CharField(max_length=64, unique=True, primary_key=True)
     author = models.CharField(max_length=128, null=True, blank=True)
     md5 = models.CharField(max_length=64)
     date = models.DateField(auto_now=True)
@@ -34,7 +58,35 @@ class Book(models.Model):
         ordering = ['title']
 
 
+class DeviceManager(models.Manager):
+    def create_dev(self, device_id, auth_type, model, **kwargs):
+        AUTH_TYPE_NONE = 0
+        AUTH_TYPE_PLAIN = 1
+        AUTH_TYPE_MD5 = 2
+        AUTH_TYPE_SHA1 = 3
+        if auth_type == AUTH_TYPE_PLAIN:
+            passwd = device_id + model.name
+        elif auth_type == AUTH_TYPE_MD5:
+            passwd = hashlib.md5(device_id + model.name).hexdigest()
+        elif auth_type == AUTH_TYPE_SHA1:
+            print(model.name)
+            passwd = hashlib.sha1(device_id + model.name).hexdigest()
+        else:
+            passwd = ''
+
+        dev = self.model(
+            device_id=device_id,
+            auth_type=auth_type,
+            model=model,
+            passwd=passwd,
+            **kwargs
+        )
+        dev.save(using=self._db)
+        return dev
+
+
 class Device(models.Model):
+    objects = DeviceManager()
     AUTH_TYPE_NONE = 0
     AUTH_TYPE_PLAIN = 1
     AUTH_TYPE_MD5 = 2
@@ -52,6 +104,22 @@ class Device(models.Model):
         choices=AUTH_TYPE_CHOICES, default=AUTH_TYPE_NONE)
     version = models.CharField(max_length=250)
     modified_date = models.DateTimeField(auto_now=True)
+    model = models.ForeignKey(Model)
+    passwd = models.CharField(max_length=256, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.auth_type == self.AUTH_TYPE_PLAIN:
+            self.passwd = self.device_id + self.model.name
+        elif self.auth_type == self.AUTH_TYPE_MD5:
+            print('------- here -----')
+            self.passwd = hashlib.md5(self.device_id + self.model.name).hexdigest()
+            print(self.model.name)
+
+        elif self.auth_type == self.AUTH_TYPE_SHA1:
+            self.passwd = hashlib.sha1(self.device_id + self.model.name).hexdigest()
+        else:
+            self.passwd = ''
+        super(Device, self).save(*args, **kwargs)
 
     REQUIRED_TITLE = ['device_id']
     USERNAME_FIELD = 'device_id'
